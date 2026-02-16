@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chúc Mừng Năm Mới</title>
+
+  <style>
+    :root{
+      --text:#eaf7f1;
+      --muted:#bfe2d3;
+      --line:#ffffff22;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --gold:#ffd36a;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      overflow:hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+      color:var(--text);
+      background:#071612;
+    }
+
+    /* Optional blurred background (behind main scene) */
+    .bg{
+      position:fixed; inset:0;
+      background: url("assets/scene_bg.jpg") center/cover no-repeat;
+      filter: blur(18px) saturate(1.1);
+      transform: scale(1.08);
+      opacity:.55;
+      z-index:0;
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(900px 500px at 50% 35%, rgba(0,0,0,.12), rgba(0,0,0,.72));
+    }
+
+    /* Fullscreen stage */
+    .stage{
+      position:fixed;
+      inset:0;
+      z-index:1;
+    }
+    .img-box{
+      position:fixed;
+      inset:0;
+      width:100vw;
+      height:100vh;
+      overflow:hidden;
+      border-radius:0;
+      box-shadow:none;
+      background:#071612;
+    }
+
+    /* Scene is positioned by JS to achieve true COVER */
+    .scene{
+      position:absolute;
+      left:0; top:0;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+
+    /* Invisible click areas */
+    .hotspot{
+      position:absolute;
+      background:transparent;
+      border:none; outline:none;
+      border-radius:12px;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+      z-index:10;
+    }
+    .hotspot:focus{outline:none}
+
+    /* Debug hotspots (press D) */
+    .debug .hotspot{
+      box-shadow:0 0 0 2px rgba(255,211,106,.40) inset;
+      background:rgba(255,211,106,.10);
+    }
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.62);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal-backdrop.show{display:flex}
+    .modal{
+      width:min(900px,100%);
+      border-radius: var(--radius);
+      background: rgba(8,12,10,.86);
+      border:1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+    }
+    .modal-head{
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid var(--line);
+    }
+    .modal-title{font-weight:900;letter-spacing:.2px}
+    .close{
+      appearance:none;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+    }
+    .modal-body{padding:16px}
+
+    .paper{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      line-height:1.7;
+    }
+    .money{
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      padding:14px;
+      border-radius:16px;
+      border:1px solid rgba(255,75,75,.28);
+      background: radial-gradient(520px 180px at 30% 0%, rgba(255,75,75,.18), transparent 60%),
+                  rgba(255,255,255,.06);
+    }
+    .amount{
+      font-size: clamp(26px, 4vw, 44px);
+      font-weight: 950;
+      color: var(--gold);
+      text-shadow: 0 10px 26px rgba(0,0,0,.35);
+      letter-spacing:.6px;
+    }
+
+    .grid{
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .thumb{
+      border-radius:16px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+    }
+    .thumb img{
+      width:100%;
+      height: 180px;
+      object-fit: cover;
+      display:block;
+    }
+    .thumb p{
+      margin:0;
+      padding:10px 12px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    video, iframe{
+      width:100%;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#000;
+      overflow:hidden;
+    }
+
+    /* FX layer */
+    #fxLayer{
+      position:absolute; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:25;
+    }
+    .fx{
+      position:absolute;
+      font-size:22px;
+      animation: floatUp 900ms ease-out forwards;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,.35));
+    }
+    @keyframes floatUp{
+      from{ transform: translate(-50%, 10px) scale(.9); opacity:0; }
+      20%{ opacity:1; }
+      to{ transform: translate(-50%, -90px) scale(1.25); opacity:0; }
+    }
+
+    /* Speech bubble */
+    #bubble{
+      position:absolute;
+      min-width:240px;
+      max-width:380px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-weight: 850;
+      line-height:1.35;
+      opacity:0;
+      transform: translateY(8px);
+      pointer-events:none;
+      z-index:30;
+    }
+    #bubble.show{
+      animation: bubbleIn 180ms ease-out forwards, bubbleOut 260ms ease-in forwards;
+      animation-delay: 0ms, 1700ms;
+    }
+    @keyframes bubbleIn{ to{ opacity:1; transform: translateY(0); } }
+    @keyframes bubbleOut{ to{ opacity:0; transform: translateY(-6px); } }
+
+    /* Chibi wrapper + sprite */
+    #chibiWrap{
+      position:absolute;
+      z-index:20;
+    }
+    #chibiSprite{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: contain;
+      object-position: 50% 100%; /* chân ưu tiên chạm đáy */
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .chibi-glow{
+      position:absolute; inset:-10px;
+      pointer-events:none;
+      opacity:0;
+      background: radial-gradient(240px 280px at 50% 55%, rgba(255,211,106,.20), transparent 65%);
+      z-index:0;
+    }
+    .chibiWrap.action .chibi-glow{ opacity:1; }
+
+    /* ===== CALIB (press C) ===== */
+    .calib-ui{ display:none; }
+    .calib-on .calib-ui{ display:block; }
+    .calib-on .hotspot{ pointer-events:none; } /* tắt click quà khi đang chỉnh */
+
+    .calib-hint{
+      position:fixed;
+      left:14px; top:14px;
+      z-index:200;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      font-size: 13px;
+      color: var(--text);
+      line-height:1.4;
+      max-width: 520px;
+    }
+    .calib-hint b{ color: var(--gold); }
+
+    /* Outline for chibi in calib */
+    .calib-on #chibiWrap{
+      outline: 2px dashed rgba(255,211,106,.85);
+      outline-offset: 2px;
+      cursor: grab;
+    }
+    .calib-on #chibiWrap:active{ cursor: grabbing; }
+
+    .handle{
+      position:absolute;
+      width:14px; height:14px;
+      border-radius: 4px;
+      border:2px solid rgba(255,255,255,.85);
+      background: rgba(255,211,106,.95);
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+      transform: translate(-50%, -50%);
+      z-index:220;
+      cursor: nwse-resize;
+      display:none;
+    }
+    .calib-on .handle{ display:block; }
+
+    .handle.nw{ left:0%;  top:0%;  cursor:nwse-resize; }
+    .handle.ne{ left:100%;top:0%;  cursor:nesw-resize; }
+    .handle.sw{ left:0%;  top:100%;cursor:nesw-resize; }
+    .handle.se{ left:100%;top:100%;cursor:nwse-resize; }
+
+    /* Bubble dot inside chibiWrap */
+    .calib-dot{
+      position:absolute;
+      width:18px; height:18px;
+      border-radius:999px;
+      border: 2px solid rgba(255,255,255,.85);
+      background: rgba(255,211,106,.95);
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+      transform: translate(-50%, -50%);
+      cursor: grab;
+      z-index:230;
+      display:none;
+    }
+    .calib-on .calib-dot{ display:block; }
+
+    .calib-label{
+      position:absolute;
+      transform: translate(10px, -24px);
+      font-size: 12px;
+      padding:4px 8px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.55);
+      color: var(--text);
+      white-space:nowrap;
+      pointer-events:none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg"></div>
+
+  <main class="stage">
+    <div class="img-box" id="imgBox">
+      <!-- Scene (full screen cover via JS) -->
+      <img class="scene" id="sceneBg" src="assets/scene_bg.jpg" alt="Scene"/>
+
+      <div id="fxLayer"></div>
+      <div id="bubble"></div>
+
+      <!-- Hotspots: define RECT by percent of base image (0..100) -->
+      <button class="hotspot" data-id="bigGiftLeft"  data-rect="7,60,30,28"  aria-label="Quà trái lớn"></button>
+      <button class="hotspot" data-id="smallGiftLeft" data-rect="23,76,20,18" aria-label="Quà trái nhỏ"></button>
+      <button class="hotspot" data-id="floorLixi"    data-rect="36,88,16,10" aria-label="Lì xì"></button>
+      <button class="hotspot" data-id="rightGifts"   data-rect="62,65,33,28" aria-label="Quà phải"></button>
+      <button class="hotspot" data-id="banhChung"    data-rect="64,81,26,16" aria-label="Bánh chưng"></button>
+
+      <!-- Chibi wrapper (initial rect in base %) - will be scaled by JS -->
+      <div id="chibiWrap" class="chibiWrap" data-rect="41,18,18,74">
+        <div class="chibi-glow"></div>
+        <img id="chibiSprite" src="assets/chibi_idle.png" alt="Chibi"/>
+
+        <!-- Click area for chibi -->
+        <button class="hotspot" data-id="chibi" data-rect="" style="left:0;top:0;width:100%;height:100%;" aria-label="Chibi"></button>
+
+        <!-- CALIB UI (press C) -->
+        <div class="calib-ui">
+          <div class="handle nw" data-handle="nw"></div>
+          <div class="handle ne" data-handle="ne"></div>
+          <div class="handle sw" data-handle="sw"></div>
+          <div class="handle se" data-handle="se"></div>
+
+          <div class="calib-dot" id="dotBubble">
+            <div class="calib-label">💬 Bubble</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALIB hint -->
+      <div class="calib-ui">
+        <div class="calib-hint">
+          <b>CALIB</b>: kéo khung chibi để chỉnh vị trí/size. Kéo chấm <b>💬</b> để đặt bubble.<br/>
+          Phím: <b>C</b> bật/tắt • <b>R</b> reset • <b>D</b> debug hotspot • <b>M</b> voice on/off
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document">
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle">Tiêu đề</div>
+        <button class="close" id="closeModal" type="button">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+<script>
+  const CONFIG = {
+    letter: {
+      title: "📜 Thư chúc Tết",
+      html: `
+        <div class="paper">
+          <div style="font-size:18px;font-weight:950;margin-bottom:6px;color:var(--gold)">Gửi ngàn lời yêu thương tới Huyền Ủn</div>
+          Năm cũ đã qua, năm mới đã đến, cảm ơn bạn đã luôn ở bên mình trong suốt một năm qua.
+          Bây giờ cậu với tớ đều đã và đang ở bên nhau với một cương vị khác năm ngoái, nhưng tớ cảm ơn vì cậu vẫn đang ở đây bên cạnh tớ, chiều tớ, chăm sóc tớ
+          hướng dẫn tớ từng bài học mà không ai có thể bày được.Tớ thật sự rất trân trọng điều đó.<br/><br/>
+          Năm mới đến, tớ chúc cậu đầu tiên là khoẻ mạnh nhé vì khoẻ mạnh mới chiều được tớ chứ nhỉ 😄
+          Thứ hai, tớ chúc cậu ngày càng thành công trong công việc, sẽ lên được giáo viên chính thức nhé.
+          Thứ ba, tớ chúc cậu luôn vui vẻ, hạnh phúc bên tớ và gia đình, bạn bè.<br/><br/>
+          Cảm ơn cậu vì đã chăm lo tớ, giúp tớ ngày càng tốt hơn, hiểu chuyện hơn trưởng thành hơn.
+            Tớ không biết phải nói gì hơn ngoài việc để năm 2026 này tớ là người chăm sóc cậu chủ yếu nhé không phải cậu là người chăm sóc nữa nhé. 
+            Năm mới vui vẻ.
+          <b>“Tết đến rồi, mình cùng mở quà nhé!”</b><br/>
+          — <i>From: Snorlax mập ú</i>
+        </div>
+      `
+    },
+    photos: {
+      title: "🖼️ Album ảnh",
+      photos: [
+        { src: "assets/photo1.jpg", caption: "Ảnh 1 (Ảnh tớ)" },
+        { src: "assets/photo2.jpg", caption: "Ảnh 2 (Ảnh tớ và cậu)" },
+        { src: "assets/photo3.jpg", caption: "Ảnh 3 (Ảnh cậu)" },
+        
+      ]
+    },
+    video: {
+      title: "🎬 Video chúc Tết",
+      type: "youtube", // "file" | "youtube"
+      youtubeId: "4qfmo1DOwLY"
+    },
+    lixi: {
+      title: "🧧 Lì xì may mắn",
+      amounts:[100000,200000,500000,1168000,2026000,3000000],
+      messages:[
+        "Tiền vào như nước, tiền ra nhỏ giọt!",
+        "Vạn sự như ý, tỷ sự như mơ!",
+        "Đầu năm mở lộc, cả năm hanh thông!",
+        "Sức khỏe đầy nhà, niềm vui đầy túi!",
+        "Gặp đúng cơ hội, bứt phá mạnh mẽ!"
+      ]
+    },
+        voice:{
+    enabled:true,
+    mode:"files",                 // ✅ dùng file audio
+        files:[
+    "assets/voice1.m4a",
+    "assets/voice2.m4a",
+    "assets/voice3.m4a"
+    ],
+    lines:[
+    "Chúc mừng năm mới! 🧧",
+    "Năm mới phát tài phát lộc! ✨",
+    "Luôn vui vẻ và bình an nha! 🌸"
+    ]
+    },
+    sprites:{
+      idle:"assets/chibi_idle.png",
+      wink:"assets/chibi_wink.png",
+      wave1:"assets/chibi_wave1.png",
+      wave2:"assets/chibi_wave2.png"
+    }
+  };
+
+  const $ = (s)=>document.querySelector(s);
+  const $$ = (s)=>document.querySelectorAll(s);
+
+  const imgBox   = $("#imgBox");
+  const sceneEl  = $("#sceneBg");
+  const fxLayer  = $("#fxLayer");
+  const bubbleEl = $("#bubble");
+
+  const chibiWrap   = $("#chibiWrap");
+  const chibiSprite = $("#chibiSprite");
+  const dotBubble   = $("#dotBubble");
+
+  const backdrop = $("#backdrop");
+  const modalTitle = $("#modalTitle");
+  const modalBody  = $("#modalBody");
+
+  // ===== LocalStorage keys =====
+  const LS_LAYOUT = "tet_layout_chibi_v1";     // chibi rect (base fractions)
+  const LS_BUBBLE = "tet_bubble_anchor_v1";    // bubble anchor (0..1 within chibiWrap)
+
+  // ===== Helpers =====
+  function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+  function randItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function formatVND(n){ return n.toLocaleString("vi-VN")+"₫"; }
+  // ===== Voice files (your real voice) =====
+let voiceFileIndex = 0;
+const voiceAudios = CONFIG.voice.files.map(src => {
+  const a = new Audio(src);
+  a.preload = "auto";
+  return a;
+});
+
+function playMyVoice(){
+  if (!CONFIG.voice.enabled) return;
+
+  // stop all
+  voiceAudios.forEach(a => { try{ a.pause(); a.currentTime = 0; }catch{} });
+
+  const a = voiceAudios[voiceFileIndex % voiceAudios.length];
+  voiceFileIndex++;
+
+  const p = a.play(); // m4a ok on Safari/Chrome
+  if (p && p.catch){
+    p.catch(() => showBubble("⚠️ Không phát được voice — kiểm tra đúng tên file .m4a và đường dẫn."));
+  }
+}
+
+
+
+  // ===== Modal =====
+  function openModal(title, html){
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    backdrop.classList.add("show");
+    backdrop.setAttribute("aria-hidden","false");
+  }
+  function closeModal(){
+    backdrop.classList.remove("show");
+    backdrop.setAttribute("aria-hidden","true");
+    const v = modalBody.querySelector("video");
+    if (v){ v.pause(); v.currentTime=0; }
+    const iframe = modalBody.querySelector("iframe");
+    if (iframe){ const src = iframe.getAttribute("src"); iframe.setAttribute("src", src); }
+    modalBody.innerHTML = "";
+  }
+
+  // ===== Content renderers =====
+  function renderLetter(){ openModal(CONFIG.letter.title, CONFIG.letter.html); }
+
+  function renderPhotos(){
+    const cards = CONFIG.photos.photos.map(p => `
+      <div class="thumb">
+        <img src="${p.src}" alt="photo" onerror="this.style.opacity=.3; this.alt='missing';"/>
+        <p>${p.caption}</p>
+      </div>
+    `).join("");
+    openModal(CONFIG.photos.title, `<div class="grid">${cards}</div>`);
+  }
+
+  function renderVideo(){
+    let html = "";
+    if (CONFIG.video.type === "youtube"){
+      html = `
+        <iframe height="440"
+          src="https://www.youtube.com/embed/${CONFIG.video.youtubeId}?autoplay=1&mute=0"
+          title="YouTube video" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      `;
+    } else {
+      html = `
+        <video controls autoplay playsinline>
+          <source src="${CONFIG.video.fileSrc}" type="video/mp4" />
+          Trình duyệt của bạn không hỗ trợ video.
+        </video>
+        <div style="margin-top:10px;color:var(--muted);font-size:13px">
+          (Đổi video tại <b>${CONFIG.video.fileSrc}</b>)
+        </div>
+      `;
+    }
+    openModal(CONFIG.video.title, html);
+  }
+
+  function renderLixi(note=""){
+    const amount = randItem(CONFIG.lixi.amounts);
+    const msg = randItem(CONFIG.lixi.messages);
+    openModal(CONFIG.lixi.title, `
+      <div class="money">
+        <div style="font-size:28px">🧧</div>
+        <div>
+          <div class="amount">${formatVND(amount)}</div>
+          <div style="color:var(--muted);margin-top:2px">${msg}</div>
+          ${note ? `<div style="margin-top:10px">${note}</div>` : ``}
+        </div>
+    </div>
+    `);
+  }
+
+  // ===== FX + bubble =====
+  function spawnFxAt(x, y){
+    const emojis = ["✨","💛","🌸","🧧","🎉","💫","💖"];
+    for (let i=0;i<8;i++){
+      const el = document.createElement("div");
+      el.className = "fx";
+      el.textContent = randItem(emojis);
+      el.style.left = (x + (Math.random()-0.5)*90) + "px";
+      el.style.top  = (y + (Math.random()-0.5)*30) + "px";
+      fxLayer.appendChild(el);
+      el.addEventListener("animationend", ()=>el.remove());
+    }
+  }
+
+  // Bubble anchor within chibiWrap (0..1)
+  const bubbleDefault = { x: 0.08, y: 0.08 };
+  let bubbleAnchor = loadJSON(LS_BUBBLE, bubbleDefault);
+
+  function showBubble(text){
+    const wrap = chibiWrap.getBoundingClientRect();
+    const box  = imgBox.getBoundingClientRect();
+    const x = (wrap.left - box.left) + wrap.width  * bubbleAnchor.x;
+    const y = (wrap.top  - box.top)  + wrap.height * bubbleAnchor.y;
+
+    bubbleEl.style.left = Math.max(8, x) + "px";
+    bubbleEl.style.top  = Math.max(8, y) + "px";
+    bubbleEl.textContent = text;
+
+    bubbleEl.classList.remove("show");
+    void bubbleEl.offsetWidth;
+    bubbleEl.classList.add("show");
+  }
+
+  // ===== Voice (3 profiles) =====
+  let voiceIndex = 0;
+  let pickedVoices = [];
+
+  function pickVietnameseVoices(){
+    if (!("speechSynthesis" in window)) return [];
+    const voices = window.speechSynthesis.getVoices?.() || [];
+    const vi = voices.filter(v => (v.lang || "").toLowerCase().startsWith("vi"));
+    const out = [];
+    for (const v of vi){
+      if (!out.find(x => x.name === v.name)) out.push(v);
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+  if ("speechSynthesis" in window){
+    window.speechSynthesis.onvoiceschanged = () => { pickedVoices = pickVietnameseVoices(); };
+    pickedVoices = pickVietnameseVoices();
+  }
+
+  function speakWithProfile(text, idx){
+    if (!CONFIG.voice.enabled) return;
+    if (!("speechSynthesis" in window)) return;
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = CONFIG.voice.lang;
+
+    const prof = CONFIG.voice.profiles[idx % 3];
+    u.rate  = prof.rate;
+    u.pitch = prof.pitch;
+
+    const v = pickedVoices[idx % 3];
+    if (v) u.voice = v;
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+
+  // ===== REAL sprite animation (wink/wave) =====
+  let animLock = false;
+  function setChibi(src){ chibiSprite.src = src; }
+
+  // preload sprites
+  [CONFIG.sprites.idle, CONFIG.sprites.wink, CONFIG.sprites.wave1, CONFIG.sprites.wave2].forEach(src=>{
+    const img = new Image(); img.src = src;
+  });
+
+  function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  async function wink(){
+    if (animLock) return;
+    animLock = true;
+    chibiWrap.classList.add("action");
+    setChibi(CONFIG.sprites.wink);
+    await wait(220);
+    setChibi(CONFIG.sprites.idle);
+    chibiWrap.classList.remove("action");
+    animLock = false;
+  }
+
+  async function wave(){
+    if (animLock) return;
+    animLock = true;
+    chibiWrap.classList.add("action");
+    const seq = [CONFIG.sprites.wave1, CONFIG.sprites.wave2, CONFIG.sprites.wave1, CONFIG.sprites.wave2, CONFIG.sprites.wave1];
+    for (const s of seq){ setChibi(s); await wait(120); }
+    setChibi(CONFIG.sprites.idle);
+    chibiWrap.classList.remove("action");
+    animLock = false;
+  }
+
+  async function chibiTalk(){
+    const idx = voiceIndex % 3;
+    const line = CONFIG.voice.lines[idx];
+
+    playMyVoice(); 
+    showBubble(line);
+
+    // fx origin near upper body
+    const wrap = chibiWrap.getBoundingClientRect();
+    const box  = imgBox.getBoundingClientRect();
+    const fxX = (wrap.left - box.left) + wrap.width * 0.55;
+    const fxY = (wrap.top  - box.top)  + wrap.height * 0.35;
+    spawnFxAt(fxX, fxY);
+
+    if (idx % 2 === 0) await wave();
+    else await wink();
+
+    voiceIndex++;
+  }
+
+  // ===== COVER layout mapping (full screen, keep coords correct) =====
+  let baseW = 1024, baseH = 572; // will update from image natural size
+  let layout = { scale:1, ox:0, oy:0, sw:baseW, sh:baseH };
+
+  // read rect from data-rect "l,t,w,h" in percent (0..100)
+  function parseRectPercent(str){
+    const [l,t,w,h] = (str||"0,0,0,0").split(",").map(x=>parseFloat(x.trim())/100);
+    return { l,t,w,h };
+  }
+
+  // chibi rect stored as base fractions (0..1)
+  const defaultChibiRect = parseRectPercent(chibiWrap.dataset.rect || "41,18,18,74");
+  let chibiRect = loadJSON(LS_LAYOUT, defaultChibiRect);
+
+  const hotspots = [...document.querySelectorAll(".hotspot")]
+    .filter(el => el.dataset.rect) // ignore chibi click button inside chibiWrap
+    .map(el => ({ el, rect: parseRectPercent(el.dataset.rect) }));
+
+  function applyCoverLayout(){
+    const W = imgBox.clientWidth;
+    const H = imgBox.clientHeight;
+
+    const scale = Math.max(W / baseW, H / baseH);
+    const sw = baseW * scale;
+    const sh = baseH * scale;
+
+    const ox = (sw - W) / 2;
+    const oy = (sh - H) / 2;
+
+    layout = { scale, ox, oy, sw, sh };
+
+    // position scene (cover)
+    sceneEl.style.width  = sw + "px";
+    sceneEl.style.height = sh + "px";
+    sceneEl.style.left   = (-ox) + "px";
+    sceneEl.style.top    = (-oy) + "px";
+
+    // position hotspots
+    for (const h of hotspots){
+      const r = h.rect;
+      h.el.style.left   = (r.l * sw - ox) + "px";
+      h.el.style.top    = (r.t * sh - oy) + "px";
+      h.el.style.width  = (r.w * sw) + "px";
+      h.el.style.height = (r.h * sh) + "px";
+    }
+
+    // position chibiWrap
+    chibiWrap.style.left   = (chibiRect.l * sw - ox) + "px";
+    chibiWrap.style.top    = (chibiRect.t * sh - oy) + "px";
+    chibiWrap.style.width  = (chibiRect.w * sw) + "px";
+    chibiWrap.style.height = (chibiRect.h * sh) + "px";
+
+    // dot bubble position inside chibiWrap
+    dotBubble.style.left = (bubbleAnchor.x * 100) + "%";
+    dotBubble.style.top  = (bubbleAnchor.y * 100) + "%";
+  }
+
+  // Update baseW/baseH from image itself (most accurate)
+  sceneEl.addEventListener("load", () => {
+    if (sceneEl.naturalWidth && sceneEl.naturalHeight){
+      baseW = sceneEl.naturalWidth;
+      baseH = sceneEl.naturalHeight;
+    }
+    applyCoverLayout();
+  });
+
+  window.addEventListener("resize", () => applyCoverLayout());
+  // initial call (in case cached)
+  setTimeout(applyCoverLayout, 0);
+
+  // ===== Click handlers =====
+  function handleOpen(id){
+    if (document.body.classList.contains("calib-on")) return; // không click khi calib
+
+    switch(id){
+      case "bigGiftLeft":  renderLetter(); break;
+      case "smallGiftLeft": renderPhotos(); break;
+      case "rightGifts":   renderVideo(); break;
+      case "floorLixi":    renderLixi("Lộc rơi lộc vãi — nhặt nhanh kẻo hết 😄"); break;
+      case "banhChung":    renderLixi("Bánh chưng xanh — cầu một năm yên ấm và đủ đầy 🍃"); break;
+      case "chibi":        chibiTalk(); break;
+    }
+  }
+
+  // hotspots (scene)
+  hotspots.forEach(h => {
+    h.el.addEventListener("click", () => handleOpen(h.el.dataset.id));
+  });
+
+  // chibi click button
+  const chibiBtn = chibiWrap.querySelector('.hotspot[data-id="chibi"]');
+  chibiBtn.addEventListener("click", () => handleOpen("chibi"));
+
+  // modal close
+  $("#closeModal").addEventListener("click", closeModal);
+  backdrop.addEventListener("click", (e)=>{ if(e.target===backdrop) closeModal(); });
+
+  // ===== CALIB: move/resize chibi + move bubble dot =====
+  let calibOn = false;
+  let dragMode = null; // "move" | "resize" | "bubble"
+  let resizeHandle = null;
+  let start = null;
+
+  function toggleCalib(){
+    calibOn = !calibOn;
+    document.body.classList.toggle("calib-on", calibOn);
+    applyCoverLayout();
+  }
+
+  function resetAll(){
+    localStorage.removeItem(LS_LAYOUT);
+    localStorage.removeItem(LS_BUBBLE);
+    chibiRect = { ...defaultChibiRect };
+    bubbleAnchor = { ...bubbleDefault };
+    applyCoverLayout();
+    showBubble("Đã reset CALIB ✅");
+  }
+
+  // pointer utils
+  function getPointer(e){
+    const p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX, y: p.clientY };
+  }
+
+  // convert screen px (within imgBox) -> base fraction (0..1)
+  function screenToBaseFrac(xScreen, yScreen){
+    const box = imgBox.getBoundingClientRect();
+    const x = xScreen - box.left;
+    const y = yScreen - box.top;
+
+    const baseX = (x + layout.ox) / layout.scale;
+    const baseY = (y + layout.oy) / layout.scale;
+
+    return { x: baseX / baseW, y: baseY / baseH };
+  }
+
+  // Start move chibi (drag inside chibiWrap)
+  chibiWrap.addEventListener("pointerdown", (e)=>{
+    if (!calibOn) return;
+    const target = e.target;
+
+    // handle resize?
+    if (target.classList.contains("handle")){
+      dragMode = "resize";
+      resizeHandle = target.dataset.handle;
+    } else if (target === dotBubble || target.closest("#dotBubble")){
+      // bubble dot drag handled separately
+      return;
+    } else {
+      dragMode = "move";
+    }
+
+    chibiWrap.setPointerCapture(e.pointerId);
+    const p = getPointer(e);
+    const base = screenToBaseFrac(p.x, p.y);
+
+    start = {
+      pointerBase: base,
+      rect: { ...chibiRect }
+    };
+    e.preventDefault();
+  });
+
+  // Resize handles events
+  chibiWrap.querySelectorAll(".handle").forEach(h=>{
+    h.addEventListener("pointerdown",(e)=>{
+      if(!calibOn) return;
+      dragMode = "resize";
+      resizeHandle = e.target.dataset.handle;
+      chibiWrap.setPointerCapture(e.pointerId);
+
+      const p = getPointer(e);
+      const base = screenToBaseFrac(p.x, p.y);
+      start = { pointerBase: base, rect: { ...chibiRect } };
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
+  // Bubble dot drag
+  dotBubble.addEventListener("pointerdown",(e)=>{
+    if(!calibOn) return;
+    dragMode = "bubble";
+    dotBubble.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  window.addEventListener("pointermove",(e)=>{
+    if(!calibOn || !dragMode) return;
+
+    if (dragMode === "bubble"){
+      const wrap = chibiWrap.getBoundingClientRect();
+      const p = getPointer(e);
+      const x = (p.x - wrap.left) / wrap.width;
+      const y = (p.y - wrap.top) / wrap.height;
+      bubbleAnchor = { x: clamp(x,0,1), y: clamp(y,0,1) };
+      localStorage.setItem(LS_BUBBLE, JSON.stringify(bubbleAnchor));
+      applyCoverLayout();
+      return;
+    }
+
+    // move/resize chibi
+    const p = getPointer(e);
+    const base = screenToBaseFrac(p.x, p.y);
+
+    const dx = base.x - start.pointerBase.x;
+    const dy = base.y - start.pointerBase.y;
+
+    let r = { ...start.rect };
+    const minW = 0.06; // min size in base fraction
+    const minH = 0.12;
+
+    if (dragMode === "move"){
+      r.l = clamp(r.l + dx, 0, 1 - r.w);
+      r.t = clamp(r.t + dy, 0, 1 - r.h);
+    } else if (dragMode === "resize"){
+      // resize based on handle, keep opposite corner fixed
+      if (resizeHandle === "nw"){
+        const newL = clamp(r.l + dx, 0, r.l + r.w - minW);
+        const newT = clamp(r.t + dy, 0, r.t + r.h - minH);
+        r.w = (r.l + r.w) - newL;
+        r.h = (r.t + r.h) - newT;
+        r.l = newL; r.t = newT;
+      }
+      if (resizeHandle === "ne"){
+        const newT = clamp(r.t + dy, 0, r.t + r.h - minH);
+        const newW = clamp(r.w + dx, minW, 1 - r.l);
+        r.h = (r.t + r.h) - newT;
+        r.t = newT;
+        r.w = newW;
+      }
+      if (resizeHandle === "sw"){
+        const newL = clamp(r.l + dx, 0, r.l + r.w - minW);
+        const newH = clamp(r.h + dy, minH, 1 - r.t);
+        r.w = (r.l + r.w) - newL;
+        r.l = newL;
+        r.h = newH;
+      }
+      if (resizeHandle === "se"){
+        r.w = clamp(r.w + dx, minW, 1 - r.l);
+        r.h = clamp(r.h + dy, minH, 1 - r.t);
+      }
+    }
+
+    chibiRect = r;
+    localStorage.setItem(LS_LAYOUT, JSON.stringify(chibiRect));
+    applyCoverLayout();
+  });
+
+  window.addEventListener("pointerup",()=>{
+    dragMode = null;
+    resizeHandle = null;
+    start = null;
+  });
+
+  // ===== Keyboard shortcuts =====
+  document.addEventListener("keydown",(e)=>{
+    if (e.key === "Escape" && backdrop.classList.contains("show")) closeModal();
+
+    const k = e.key.toLowerCase();
+
+    if (k === "d"){ document.body.classList.toggle("debug"); }
+    if (k === "m"){
+      CONFIG.voice.enabled = !CONFIG.voice.enabled;
+      if (!CONFIG.voice.enabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      showBubble(CONFIG.voice.enabled ? "Đã bật giọng nói 🔊" : "Đã tắt giọng nói 🔇");
+    }
+    if (k === "c"){ toggleCalib(); }
+    if (k === "r"){ resetAll(); }
+  });
+
+  // ===== JSON storage helper =====
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return structuredClone(fallback);
+      const obj = JSON.parse(raw);
+      return { ...structuredClone(fallback), ...obj };
+    }catch{
+      return structuredClone(fallback);
+    }
+  }
+</script>
+</body>
+</html>
